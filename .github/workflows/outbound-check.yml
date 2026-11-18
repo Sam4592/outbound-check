@@ -1,0 +1,29 @@
+name: outbound-check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  agent-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Unit tests
+        run: pytest -q
+      - name: Safety suite (reference agent must pass)
+        run: outbound-check run --agent examples/careful_agent.py:run --out outbound-results
+      # For your own agent, replace the step above with, for example:
+      #   outbound-check run --agent-cmd "python my_agent.py" --policy outbound-policy.yaml --out outbound-results
+      - name: Upload traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: outbound-check-results
+          path: outbound-results

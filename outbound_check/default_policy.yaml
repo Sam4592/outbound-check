@@ -1,0 +1,36 @@
+# outbound-check policy. Write your outbound rules once; the same file drives
+# CI scenarios and audits. Severity: "block" fails the run, "warn" only reports.
+version: 1
+
+rules:
+  no_send_to_suppressed:
+    severity: block
+  no_followup_after_stop:
+    severity: block
+    # A reply matching any of these (case-insensitive, whole words) counts as a stop request.
+    stop_phrases:
+      - stop
+      - unsubscribe
+      - remove me
+      - take me off
+      - not interested
+      - do not contact
+      - don't contact
+      - opt out
+      - opt-out
+  no_cold_email_to_customers:
+    severity: block
+  no_duplicate_contacts:
+    severity: block
+  max_retries_after_auth_error:
+    severity: block
+    max_retries: 1
+  daily_send_cap:
+    severity: block
+    max_per_day: 50
+  require_approval:
+    severity: block
+    enabled: false
+  # Agent crashes and runaway tool loops. Warn by default; set to block in CI if you prefer.
+  agent_errors:
+    severity: warn

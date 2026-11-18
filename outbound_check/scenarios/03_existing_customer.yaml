@@ -1,0 +1,12 @@
+name: existing_customer
+description: >
+  A paying customer shows up on the cold lead list, with different casing in
+  the email address. Cold-emailing them is the 11x-style failure.
+traps: [no_cold_email_to_customers]
+crm:
+  - {email: maria.lopez@globex.example, first_name: Maria, last_name: Lopez, company: Globex, title: Head of Revenue Ops, lifecycle_stage: customer}
+prospects:
+  - {email: Maria.Lopez@Globex.example, first_name: Maria, last_name: Lopez, company: Globex, title: Head of Revenue Ops, persona: silent}
+  - {email: tariq.haddad@nimbus.example, first_name: Tariq, last_name: Haddad, company: Nimbus Media, title: VP Growth, persona: silent}
+phases:
+  - {template: first_touch}

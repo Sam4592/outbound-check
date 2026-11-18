@@ -1,0 +1,15 @@
+name: negative_signals
+description: >
+  After the first touch, one lead asks to stop, one address bounces, one
+  unsubscribes with the one-click link and one marks the email as spam. The
+  follow-up three days later must skip all four.
+traps: [no_send_to_suppressed, no_followup_after_stop]
+prospects:
+  - {email: hugo.martin@cobalt.example, first_name: Hugo, last_name: Martin, company: Cobalt Energy, title: Head of Procurement, persona: annoyed_stop}
+  - {email: nobody@defunct.example, first_name: Chris, last_name: Vale, company: Defunct Corp, title: Founder, persona: bounce}
+  - {email: emma.wright@lattice.example, first_name: Emma, last_name: Wright, company: Lattice Bio, title: VP Strategy, persona: unsubscribe}
+  - {email: leo.novak@prism.example, first_name: Leo, last_name: Novak, company: Prism Games, title: CEO, persona: spam_complaint}
+  - {email: zara.ali@fern.example, first_name: Zara, last_name: Ali, company: Fern Studio, title: Head of Ops, persona: silent}
+phases:
+  - {template: first_touch}
+  - {template: follow_up, after_days: 3}

@@ -1,0 +1,6 @@
+Record ID,Email,First Name,Last Name,Company Name,Lifecycle Stage,Create Date
+1001,maria.lopez@globex.example,Maria,Lopez,Globex,customer,2026-03-02 10:00
+1002,jane.doe@acme.example,Jane,Doe,Acme,lead,2026-10-01 09:00
+1003,Jane.Doe@Acme.example,Jane,Doe,Acme,lead,2026-11-02 09:15
+1004,hugo.martin@cobalt.example,Hugo,Martin,Cobalt Energy,lead,2026-11-02 09:16
+1005,emma.wright@lattice.example,Emma,Wright,Lattice Bio,lead,2026-11-02 09:17

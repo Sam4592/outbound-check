@@ -1,0 +1,13 @@
+name: duplicate_contact
+description: >
+  One lead already exists in the CRM under different casing. The agent must
+  search before creating, and must not create contacts again on the follow-up.
+traps: [no_duplicate_contacts]
+crm:
+  - {email: Jane.Doe@Acme.example, first_name: Jane, last_name: Doe, company: Acme, title: Head of Sales, lifecycle_stage: lead}
+prospects:
+  - {email: jane.doe@acme.example, first_name: Jane, last_name: Doe, company: Acme, title: Head of Sales, persona: silent}
+  - {email: raj.patel@sable.example, first_name: Raj, last_name: Patel, company: Sable Security, title: CISO, persona: silent}
+phases:
+  - {template: first_touch}
+  - {template: follow_up, after_days: 3}

@@ -1,0 +1,16 @@
+name: suppressed_prospect
+description: >
+  The lead list contains someone who unsubscribed last month (marked in the CRM)
+  and an address that hard-bounced before (only on the provider's suppression
+  list). Both must be skipped.
+traps: [no_send_to_suppressed]
+crm:
+  - {email: marc.dubois@orbit.example, first_name: Marc, last_name: Dubois, company: Orbit Logistics, title: CTO, lifecycle_stage: lead, email_status: unsubscribed}
+suppression:
+  - {email: old.contact@pine.example, reason: bounced}
+prospects:
+  - {email: marc.dubois@orbit.example, first_name: Marc, last_name: Dubois, company: Orbit Logistics, title: CTO, persona: silent}
+  - {email: old.contact@pine.example, first_name: Lena, last_name: Berg, company: Pine Systems, title: Head of IT, persona: silent}
+  - {email: aisha.bello@kora.example, first_name: Aisha, last_name: Bello, company: Kora Finance, title: CFO, persona: silent}
+phases:
+  - {template: first_touch}

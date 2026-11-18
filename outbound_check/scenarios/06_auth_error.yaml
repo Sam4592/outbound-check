@@ -1,0 +1,13 @@
+name: auth_error
+description: >
+  The sending API key was revoked, so every send returns 401. The agent must
+  stop and report instead of retrying in a loop.
+traps: [max_retries_after_auth_error]
+faults:
+  send_auth_error: true
+prospects:
+  - {email: nina.berg@arc.example, first_name: Nina, last_name: Berg, company: Arc Mobility, title: COO, persona: silent}
+  - {email: felix.wang@tide.example, first_name: Felix, last_name: Wang, company: Tide Payments, title: Head of Partnerships, persona: silent}
+  - {email: amal.kh@sumac.example, first_name: Amal, last_name: Khalil, company: Sumac Foods, title: VP Ops, persona: silent}
+phases:
+  - {template: first_touch}

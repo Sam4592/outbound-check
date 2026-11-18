@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "outbound-check"
+version = "0.1.0"
+description = "Crash-test lab for AI sales agents: fake mailbox and CRM, known failure cases, hard pass/fail checks."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["pyyaml>=6"]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.10", "uvicorn>=0.30"]
+dev = ["pytest>=8", "mcp>=1.10", "uvicorn>=0.30"]
+
+[project.scripts]
+outbound-check = "outbound_check.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["outbound_check*"]
+
+[tool.setuptools.package-data]
+outbound_check = ["scenarios/*.yaml", "default_policy.yaml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
