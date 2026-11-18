@@ -33,7 +33,7 @@ reads event logs, so CI runs and audits share one code path.
 | MCP server | 8 tools over streamable HTTP: `get_task`, `list_prospects`, `search_contact`, `create_contact`, `update_contact`, `check_suppression`, `request_approval`, `send_email`, `read_replies` |
 | Scripted recipients | silent, interested, annoyed (asks to stop), out of office, hard bounce, one-click unsubscribe, spam complaint |
 | Scenarios | 8 YAML files, each with one or more phases (first touch, follow-up 3 days later) |
-| Checker | 7 deterministic rules, severity `block` or `warn`, driven by `policy.yaml` |
+| Checker | 9 deterministic rules, severity `block` or `warn`, driven by `policy.yaml` |
 | CLI | `outbound-check run`, `outbound-check check`, `outbound-check audit` |
 | Audit | HubSpot contacts CSV + generic activity CSV converted to an event log |
 | Demo agents | naive (fails), careful (passes), careful over MCP (proves the plug-in path) |
@@ -57,8 +57,10 @@ SMTP sink, HTTP proxy in front of real CRM APIs, Salesforce, claim-sourcing chec
 
 - **Week 1:** event log, sandbox, MCP server, checker. **Done in this build.**
 - **Week 2:** scenarios, CLI, audit converter, demo agents, README. **Done in this build.**
+- **Launch demo:** report 001 published (kaymen99 LangGraph template). Added crash
+  isolation, drafts, and the `no_cross_prospect_content` rule as a result. **Done.**
 - **Next:**
-  1. Run it against 2-3 open-source SDR agents and publish a "what broke" report
+  1. Report 002: AgentSDR (plan in `benchmarks/README.md`)
   2. LLM demo agent (Claude over MCP) for the before/after launch post
   3. HTML report and GitHub Action
   4. Verify audit column names against a real HubSpot export and one sending tool (Instantly or Smartlead)

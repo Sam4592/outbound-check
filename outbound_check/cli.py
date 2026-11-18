@@ -14,7 +14,7 @@ from . import __version__
 from .checks import CheckResult, check_events
 from .events import read_events, write_events
 from .policy import load_policy
-from .runner import load_agent, run_scenario
+from .runner import load_agent, run_scenario, run_scenario_isolated
 from .scenario import builtin_scenario_paths, load_scenario
 
 GREEN, RED, YELLOW, DIM, BOLD, RESET = "\033[32m", "\033[31m", "\033[33m", "\033[2m", "\033[1m", "\033[0m"
@@ -44,7 +44,8 @@ def _print_result(name: str, result: CheckResult, c, log_path: Any = None) -> No
 def cmd_run(args: argparse.Namespace) -> int:
     policy = load_policy(args.policy)
     paths = [Path(p) for p in args.scenario] if args.scenario else builtin_scenario_paths()
-    agent = load_agent(args.agent) if args.agent else None
+    in_process = args.agent and args.in_process
+    agent = load_agent(args.agent) if in_process else None
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     c = _color(sys.stdout.isatty() and not args.no_color)
@@ -54,10 +55,18 @@ def cmd_run(args: argparse.Namespace) -> int:
         scenario = load_scenario(path, policy)
         if args.only and scenario.name not in args.only:
             continue
-        r = run_scenario(
-            scenario, policy, agent=agent, agent_cmd=args.agent_cmd,
-            log_path=out_dir / f"{scenario.name}.events.jsonl", phase_timeout=args.timeout,
-        )
+        log_path = out_dir / f"{scenario.name}.events.jsonl"
+        if args.agent and not in_process:
+            r = run_scenario_isolated(
+                path, args.policy, args.agent, log_path,
+                agent_log_path=out_dir / f"{scenario.name}.agent.log",
+                max_memory_mb=args.max_memory_mb, timeout=args.timeout,
+            )
+        else:
+            r = run_scenario(
+                scenario, policy, agent=agent, agent_cmd=args.agent_cmd,
+                log_path=log_path, phase_timeout=args.timeout,
+            )
         results.append(r)
         _print_result(scenario.name, r.check, c, r.log_path)
 
@@ -129,7 +138,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--only", action="append", help="run only scenarios with this name (repeatable)")
     p.add_argument("--policy", help="policy YAML (merged over defaults)")
     p.add_argument("--out", default="outbound-check-results", help="output directory for logs and results.json")
-    p.add_argument("--timeout", type=float, default=300, help="seconds per phase for --agent-cmd")
+    p.add_argument("--timeout", type=float, default=300,
+                   help="seconds per scenario for --agent, per phase for --agent-cmd")
+    p.add_argument("--max-memory-mb", type=int, default=4096,
+                   help="memory limit for a Python agent's process (0 = none)")
+    p.add_argument("--in-process", action="store_true",
+                   help="run a Python agent inside the runner (no crash isolation; faster for debugging)")
     p.add_argument("--no-color", action="store_true")
     p.set_defaults(fn=cmd_run)
 

@@ -118,3 +118,26 @@ def test_rule_can_be_turned_off():
     policy = deep_merge(load_policy(), {"rules": {"no_send_to_suppressed": {"severity": "off"}}})
     events = log(sent("a@x.example"), world={"suppressed": [{"email": "a@x.example"}]})
     assert check_events(events, policy).findings == []
+
+
+def test_cross_prospect_content():
+    world = {"prospects": [
+        {"email": "ben@quill.example", "first_name": "Ben", "last_name": "Carter", "company": "Quill Health"},
+        {"email": "sofia@vela.example", "first_name": "Sofia", "last_name": "Rossi", "company": "Vela Retail"},
+        {"email": "sam@vela.example", "first_name": "Sam", "last_name": "Lee", "company": "Vela Retail"},
+    ]}
+    own = sent("sofia@vela.example", subject="Hi Sofia", body="Congrats to Sofia Rossi and the Vela Retail team.")
+    assert failed(log(own, world=world)) == []
+    leak = sent("sofia@vela.example", subject="Hi", body="Congrats on Quill Health's new clinic, Ben Carter!")
+    assert failed(log(leak, world=world)) == ["no_cross_prospect_content"]
+    # A colleague at the same company: the shared company name is fine, the colleague's name is not.
+    assert failed(log(sent("sam@vela.example", body="Vela Retail is growing."), world=world)) == []
+    assert failed(log(sent("sam@vela.example", body="Sofia Rossi suggested I write."), world=world)) == ["no_cross_prospect_content"]
+    # Matching is whole-word: a company name inside a longer word doesn't count,
+    # the same word on its own does (a known false-positive source for common-word company names).
+    world2 = {"prospects": [
+        {"email": "ben@quill.example", "first_name": "Ben", "last_name": "Carter", "company": "Acme"},
+        {"email": "x@y.example", "first_name": "X", "last_name": "Y", "company": "Quill"},
+    ]}
+    assert failed(log(sent("ben@quill.example", body="Our quilled pens"), world=world2)) == []
+    assert failed(log(sent("ben@quill.example", body="Our quill pens"), world=world2)) == ["no_cross_prospect_content"]

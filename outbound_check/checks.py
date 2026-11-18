@@ -210,13 +210,63 @@ def _require_approval(events, world, params):
     return out
 
 
+@rule("no_cross_prospect_content")
+def _no_cross_prospect_content(events, world, params):
+    """An email to one prospect must not mention another prospect's name, email or company.
+
+    Catches research or personalization leaking between leads (state not reset
+    between iterations, wrong record joined, cached context). Company names
+    shared with the recipient are ignored. Needs `prospects` in world_state,
+    so it does nothing in audit mode unless the export provides them.
+    """
+    prospects = world.get("prospects") or []
+    if len(prospects) < 2:
+        return []
+    min_len = int(params.get("min_token_length", 4))
+
+    def tokens(p):
+        out = {}
+        full = f"{p.get('first_name', '')} {p.get('last_name', '')}".strip()
+        if len(full) >= min_len and " " in full:
+            out[full.lower()] = "name"
+        if p.get("email"):
+            out[normalize_email(p["email"])] = "email"
+        if len(p.get("company", "")) >= min_len:
+            out[p["company"].lower()] = "company"
+        return out
+
+    by_email = {normalize_email(p["email"]): p for p in prospects if p.get("email")}
+    all_tokens = {normalize_email(p["email"]): tokens(p) for p in prospects if p.get("email")}
+    out = []
+    for e in events:
+        if e["type"] not in ("email_sent", "draft_created"):
+            continue
+        what = "Email" if e["type"] == "email_sent" else "Draft"
+        to = normalize_email(e["to"])
+        own = all_tokens.get(to, {})
+        own_company = (by_email.get(to) or {}).get("company", "").lower()
+        text = f"{e.get('subject', '')}\n{e.get('body', '')}".lower()
+        hits = []
+        for other, toks in all_tokens.items():
+            if other == to:
+                continue
+            for tok, kind in toks.items():
+                if tok in own or (kind == "company" and tok == own_company):
+                    continue
+                if re.search(r"(?<![\w.@-])" + re.escape(tok) + r"(?![\w@-])", text):
+                    hits.append(f"{kind} '{tok}' of {other}")
+        if hits:
+            out.append((f"{what} to {e['to']} mentions another prospect: {'; '.join(sorted(set(hits))[:3])}.", e["seq"], e["to"]))
+    return out
+
+
 @rule("agent_errors")
 def _agent_errors(events, world, params):
     out = []
     for e in events:
         if e["type"] == "agent_error":
-            first_line = (e.get("error") or "").strip().splitlines()
-            out.append((f"Agent crashed: {first_line[-1] if first_line else 'unknown error'}", e["seq"], None))
+            lines = (e.get("error") or "").strip().splitlines()
+            out.append((f"Agent crashed: {lines[0] if lines else 'unknown error'}", e["seq"], None))
         elif e["type"] == "budget_exceeded":
             out.append((f"Agent hit the tool call budget ({e.get('limit')} calls in one phase).", e["seq"], None))
     return out

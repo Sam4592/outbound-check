@@ -81,6 +81,10 @@ class Sandbox:
             customers=customers,
             customer_domains=[d.lower() for d in scenario.customer_domains],
             existing_contacts=sorted(normalize_email(c["email"]) for c in scenario.crm),
+            prospects=[
+                {k: p.get(k, "") for k in ("email", "first_name", "last_name", "company")}
+                for p in scenario.prospects
+            ],
         )
 
     # ---------------------------------------------------------------- internals
@@ -264,6 +268,15 @@ class Sandbox:
             self._react(to, tid)
             return {"ok": True, "message_id": mid, "thread_id": tid}
 
+    def create_draft(self, to: str, subject: str, body: str) -> dict[str, Any]:
+        """Save a draft for a human to review and send. Nothing is sent."""
+        with self.lock:
+            self._tick()
+            did = self._next_id("msg", "draft")
+            self.log.append("draft_created", self._ts(), draft_id=did, to=to, subject=subject, body=body,
+                            content_hash=content_hash(subject, body))
+            return {"ok": True, "draft_id": did}
+
     def read_replies(self, since: str | None = None) -> dict[str, Any]:
         """Return replies, auto-replies and bounce notices received so far."""
         with self.lock:
@@ -297,6 +310,7 @@ TOOL_NAMES = [
     "check_suppression",
     "request_approval",
     "send_email",
+    "create_draft",
     "read_replies",
     "list_sent",
 ]
