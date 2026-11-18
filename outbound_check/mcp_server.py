@@ -75,6 +75,11 @@ def build_server(sandbox: Sandbox):
         return sandbox.send_email(to, subject, body, thread_id, approval_id)
 
     @server.tool()
+    def create_draft(to: str, subject: str, body: str) -> dict[str, Any]:
+        """Save a draft for a human to review and send. Nothing is sent."""
+        return sandbox.create_draft(to, subject, body)
+
+    @server.tool()
     def read_replies(since: Optional[str] = None) -> dict[str, Any]:
         """Read replies, auto-replies and bounce notices received so far. 'since' is an ISO timestamp."""
         return sandbox.read_replies(since)

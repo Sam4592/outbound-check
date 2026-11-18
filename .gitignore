@@ -4,3 +4,7 @@ __pycache__/
 outbound-check-results/
 *.events.jsonl
 build/
+!benchmarks/*/results/**
+/.cache/
+/results/
+token.json

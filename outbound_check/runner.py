@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import json
 import os
 import shlex
 import subprocess
@@ -75,7 +76,8 @@ def _run_phases(sandbox: Sandbox, scenario: Scenario, run_phase: Callable[[int, 
         except ToolBudgetExceeded:
             pass
         except Exception as e:  # the agent crashing is reported, not raised
-            sandbox.record_agent_error(f"{type(e).__name__}: {e}\n{traceback.format_exc(limit=3)}")
+            summary = f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+            sandbox.record_agent_error(f"{summary}\n{traceback.format_exc(limit=3)}")
     # Let late signals (unsubscribes, replies) land so the log is complete.
     sandbox.advance(timedelta(days=7))
 
@@ -121,3 +123,60 @@ def run_scenario(
 
     result = check_events(log.events, effective)
     return RunResult(scenario=scenario, check=result, log_path=Path(log_path) if log_path else None, events=log.events)
+
+
+def run_scenario_isolated(
+    scenario_path: str | Path,
+    policy_path: str | None,
+    agent_spec: str,
+    log_path: str | Path,
+    agent_log_path: str | Path | None = None,
+    max_memory_mb: int = 4096,
+    timeout: float = 600,
+) -> RunResult:
+    """Run a Python agent in a child process with memory and time limits.
+
+    A crash, out-of-memory kill or timeout is appended to the event log as an
+    agent_error, and the partial log is checked like any other.
+    """
+    from .events import read_events
+    from .policy import load_policy
+    from .scenario import load_scenario
+
+    policy = load_policy(policy_path)
+    scenario = load_scenario(scenario_path, policy)
+    log_path = Path(log_path)
+    cmd = [sys.executable, "-m", "outbound_check.child", "--scenario", str(scenario_path),
+           "--agent", agent_spec, "--log", str(log_path), "--max-memory-mb", str(max_memory_mb)]
+    if policy_path:
+        cmd += ["--policy", str(policy_path)]
+
+    problem = None
+    out = open(agent_log_path, "w", encoding="utf-8") if agent_log_path else subprocess.DEVNULL
+    try:
+        proc = subprocess.run(cmd, stdout=out, stderr=subprocess.STDOUT if agent_log_path else subprocess.PIPE,
+                              timeout=timeout)
+        if proc.returncode < 0:
+            sig = -proc.returncode
+            hint = " (killed, most likely out of memory)" if sig == 9 else ""
+            problem = f"Agent process killed by signal {sig}{hint}."
+        elif proc.returncode != 0:
+            problem = f"Agent process exited with code {proc.returncode}."
+    except subprocess.TimeoutExpired:
+        problem = f"Agent did not finish within {timeout:.0f}s."
+    finally:
+        if agent_log_path:
+            out.close()
+
+    events = read_events(log_path) if log_path.exists() and log_path.stat().st_size else []
+    if not events:
+        problem = problem or "Agent produced no events."
+    if problem:
+        last_ts = events[-1]["ts"] if events else scenario.start.strftime("%Y-%m-%dT%H:%M:%SZ")
+        event = {"seq": len(events), "ts": last_ts, "type": "agent_error", "error": problem}
+        events.append(event)
+        with log_path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(event) + "\n")
+
+    effective = deep_merge(policy, scenario.policy_overrides)
+    return RunResult(scenario=scenario, check=check_events(events, effective), log_path=log_path, events=events)

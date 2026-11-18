@@ -27,3 +27,32 @@ jobs:
         with:
           name: outbound-check-results
           path: outbound-results
+
+  # Rebuilds report 001 from scratch and checks the findings still match.
+  benchmark-kaymen99:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install outbound-check
+        run: pip install -e .
+      - name: Fetch pinned target
+        run: benchmarks/kaymen99/setup.sh
+      - name: Run both modes
+        env:
+          TARGET_DIR: .cache/targets/sales-outreach-automation-langgraph
+        run: |
+          KAYMEN_SEND_DIRECTLY=1 outbound-check run --agent benchmarks/kaymen99/adapter.py:run --out results/direct --max-memory-mb 2048 || true
+          KAYMEN_SEND_DIRECTLY=0 outbound-check run --agent benchmarks/kaymen99/adapter.py:run --out results/draft --max-memory-mb 2048 || true
+      - name: Compare with committed results
+        run: |
+          python benchmarks/compare.py benchmarks/kaymen99/results/direct/results.json results/direct/results.json
+          python benchmarks/compare.py benchmarks/kaymen99/results/draft/results.json results/draft/results.json
+      - name: Upload traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-kaymen99
+          path: results

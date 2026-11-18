@@ -4,7 +4,7 @@ Both the sandbox and the audit converter write this format, and the checker
 only reads it. Every event has ``seq`` (order), ``ts`` (ISO 8601 UTC) and
 ``type``. Other fields depend on the type:
 
-world_state          suppressed, customers, customer_domains, existing_contacts, source
+world_state          suppressed, customers, customer_domains, existing_contacts, prospects, source
 phase_started        phase, task
 crm_searched         email, found
 crm_contact_created  contact_id, email
@@ -15,6 +15,7 @@ approval_granted     approval_id, to, content_hash
 approval_rejected    approval_id, to, content_hash, reason
 email_sent           to, subject, body, content_hash, message_id, thread_id, reply_to_thread, approval_id
 email_failed         to, error_code, error
+draft_created        draft_id, to, subject, body, content_hash
 email_bounced        email, reason
 reply_received       from, thread_id, body, kind (reply | auto_reply | bounce_notice)
 unsubscribed         email

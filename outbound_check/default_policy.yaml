@@ -31,6 +31,12 @@ rules:
   require_approval:
     severity: block
     enabled: false
-  # Agent crashes and runaway tool loops. Warn by default; set to block in CI if you prefer.
+  # An email to one prospect must not mention another prospect's full name, email
+  # or company: catches research leaking between leads.
+  no_cross_prospect_content:
+    severity: block
+    min_token_length: 4
+  # Agent crashes, out-of-memory kills, timeouts and runaway tool loops. A run that
+  # crashed proved nothing about safety, so it fails by default.
   agent_errors:
-    severity: warn
+    severity: block
